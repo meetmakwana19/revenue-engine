@@ -94,8 +94,16 @@ export class StripeService implements OnModuleInit {
     return await this.stripe.products.retrieve(productId);
   }
 
-  async listProducts(limit: number = 10) {
-    return await this.stripe.products.list({ limit });
+  async listProducts(limit: number = 10, active: boolean = true) {
+    const response = await this.stripe.products.list({ limit, active });
+
+    // Stripe API doesn't provide total count in the response
+    // We can only return the current page count
+    return {
+      ...response,
+      currentCount: response.data.length,
+      hasMore: response.has_more,
+    };
   }
 
   async updateProduct(productId: string, data: Stripe.ProductUpdateParams) {

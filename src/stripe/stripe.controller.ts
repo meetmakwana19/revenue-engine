@@ -95,9 +95,10 @@ export class StripeController {
   }
 
   @Get('products')
-  async listProducts(@Query('limit') limit?: string) {
+  async listProducts(@Query('limit') limit?: string, @Query('active') active?: string) {
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    return await this.stripeService.listProducts(limitNum);
+    const activeBool = active === undefined ? true : active.toLowerCase() === 'true';
+    return await this.stripeService.listProducts(limitNum, activeBool);
   }
 
   @Get('products/:id')

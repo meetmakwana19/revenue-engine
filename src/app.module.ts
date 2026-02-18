@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getMongooseConfig } from './config/mongoose.config';
 import { PaymentModule } from './payment/payment.module';
+import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PaymentModule } from './payment/payment.module';
       inject: [ConfigService],
     }),
     PaymentModule,
+    SubscriptionPlansModule,
   ],
   controllers: [AppController],
   providers: [AppService],

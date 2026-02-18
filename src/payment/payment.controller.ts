@@ -15,6 +15,8 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type Stripe from 'stripe';
+import type { SubscriptionPlan } from '../subscription-plans/schemas/subscription-plan.schema';
+import { SubscriptionPlansService } from '../subscription-plans/subscription-plans.service';
 import { CheckoutHeaders } from './decorators/checkout-headers.decorator';
 import type { ICheckoutHeaders } from './dto/checkout-headers.dto';
 import { CreateCheckoutSessionDto } from './providers/stripe/dto/create-checkout-session.dto';
@@ -28,7 +30,10 @@ import { PriceValidationResult, StripeService } from './providers/stripe/service
 
 @Controller('payments')
 export class PaymentController {
-  constructor(private readonly stripeService: StripeService) {}
+  constructor(
+    private readonly stripeService: StripeService,
+    private readonly subscriptionPlansService: SubscriptionPlansService,
+  ) {}
 
   // Customer endpoints
   @Post('customers')
@@ -232,23 +237,41 @@ export class PaymentController {
   ) {
     // Headers are automatically validated by @CheckoutHeaders() decorator
     // organizationId and customerEmail are now extracted from headers
-    // plan_id remains in the request body
+    // subscription_plan_uid is in the request body
 
-    // TODO: Get priceId from plan_id and billing_interval
-    // You need to integrate with your plans service/API to fetch the stripe_price_id
-    // Example: Call GET /plans, find plan by plan_id, get pricing[billing_interval].stripe_price_id
-    //
-    // For now, this is a placeholder - replace with actual plan lookup
-    // const plansResponse = await this.httpService.get('/plans').toPromise();
-    // const plan = plansResponse.data.plans.find(p => p.key === createCheckoutDto.plan_id);
-    // const priceId = plan.pricing[createCheckoutDto.billing_interval].stripe_price_id;
-
-    // Get priceId from DTO (temporary) or implement plan lookup service
-    const priceId = createCheckoutDto.priceId;
-
-    if (!priceId) {
-      throw new BadRequestException('Price ID is required');
+    // Query subscription plan to get priceId from prices array based on billing_interval
+    let subscriptionPlan: SubscriptionPlan;
+    try {
+      const plan = await this.subscriptionPlansService.findOne(
+        createCheckoutDto.subscription_plan_uid,
+      );
+      if (!plan) {
+        throw new BadRequestException(
+          `Subscription plan with UID '${createCheckoutDto.subscription_plan_uid}' not found`,
+        );
+      }
+      subscriptionPlan = plan;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        `Subscription plan with UID '${createCheckoutDto.subscription_plan_uid}' not found`,
+      );
     }
+
+    // Find the price matching the billing_interval
+    const price = subscriptionPlan.prices?.find(
+      (p) => p.interval === createCheckoutDto.billing_interval,
+    );
+
+    if (!price || !price.id) {
+      throw new BadRequestException(
+        `No price found for subscription plan '${createCheckoutDto.subscription_plan_uid}' with billing interval '${createCheckoutDto.billing_interval}'`,
+      );
+    }
+
+    const priceId = price.id;
 
     // Validate priceId before proceeding
     try {
@@ -274,7 +297,7 @@ export class PaymentController {
 
     const result = await this.stripeService.createCheckoutSessionWithPersistence({
       organizationId: headers.organizationId,
-      planId: createCheckoutDto.plan_id,
+      planId: createCheckoutDto.subscription_plan_uid,
       billingInterval: createCheckoutDto.billing_interval,
       priceId,
       customerEmail: headers.customerEmail,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 import { PaymentController } from './payment.controller';
 import {
   CheckoutSession,
@@ -17,6 +18,7 @@ import { StripeService } from './providers/stripe/services/stripe.service';
       { name: StripeCustomer.name, schema: StripeCustomerSchema },
       { name: CheckoutSession.name, schema: CheckoutSessionSchema },
     ]),
+    SubscriptionPlansModule,
   ],
   controllers: [PaymentController],
   providers: [StripeService],

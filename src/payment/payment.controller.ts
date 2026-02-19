@@ -26,6 +26,7 @@ import { CreatePaymentIntentDto } from './providers/stripe/dto/create-payment-in
 import { CreatePriceDto } from './providers/stripe/dto/create-price.dto';
 import { CreateProductDto } from './providers/stripe/dto/create-product.dto';
 import { CreateSubscriptionDto } from './providers/stripe/dto/create-subscription.dto';
+import { VerifyCheckoutSessionDto } from './providers/stripe/dto/verify-checkout-session.dto';
 import { PriceValidationResult, StripeService } from './providers/stripe/services/stripe.service';
 
 @Controller('payments')
@@ -310,18 +311,14 @@ export class PaymentController {
 
     return {
       checkout_url: result.checkout_url,
-      session_id: result.session_id,
     };
   }
 
   // Success endpoint
-  @Get('checkout/success')
-  async checkoutSuccess(@Query('session_id') sessionId: string) {
-    if (!sessionId) {
-      throw new BadRequestException('session_id is required');
-    }
-
-    return await this.stripeService.verifyCheckoutSession(sessionId);
+  @Post('checkout/success')
+  @HttpCode(HttpStatus.OK)
+  async checkoutSuccess(@Body() verifyCheckoutSessionDto: VerifyCheckoutSessionDto) {
+    return await this.stripeService.verifyCheckoutSession(verifyCheckoutSessionDto.session_id);
   }
 
   // Webhook endpoint for Stripe events

@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { getMongooseConfig } from './config/mongoose.config';
 import { PaymentModule } from './payment/payment.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SubscriptionPlansModule } from './subscription-plans/subscription-plans
     }),
     PaymentModule,
     SubscriptionPlansModule,
+    WebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService],

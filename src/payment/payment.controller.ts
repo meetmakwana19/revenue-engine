@@ -4,17 +4,13 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Param,
   Post,
   Put,
   Query,
-  Req,
 } from '@nestjs/common';
-import type { Request } from 'express';
-import type Stripe from 'stripe';
 import type { SubscriptionPlan } from '../subscription-plans/schemas/subscription-plan.schema';
 import { SubscriptionPlansService } from '../subscription-plans/subscription-plans.service';
 import { CheckoutHeaders } from './decorators/checkout-headers.decorator';
@@ -319,74 +315,6 @@ export class PaymentController {
   @HttpCode(HttpStatus.OK)
   async checkoutSuccess(@Body() verifyCheckoutSessionDto: VerifyCheckoutSessionDto) {
     return await this.stripeService.verifyCheckoutSession(verifyCheckoutSessionDto.session_id);
-  }
-
-  // Webhook endpoint for Stripe events
-  @Post('webhook')
-  @HttpCode(HttpStatus.OK)
-  async handleWebhook(
-    @Req() req: Request & { rawBody?: Buffer },
-    @Headers('stripe-signature') signature: string,
-  ) {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
-    }
-
-    const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body));
-
-    let event: Stripe.Event;
-
-    try {
-      event = this.stripeService.constructWebhookEvent(rawBody, signature, webhookSecret);
-    } catch (err) {
-      throw new Error(
-        `Webhook signature verification failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      );
-    }
-
-    // Handle different event types
-    switch (event.type) {
-      case 'payment_intent.succeeded': {
-        // Handle successful payment
-        const paymentIntent = event.data.object;
-        console.log('Payment succeeded:', paymentIntent.id);
-        // Add your business logic here (e.g., update database, send confirmation email)
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        // Handle failed payment
-        const failedPayment = event.data.object;
-        console.log('Payment failed:', failedPayment.id);
-        // Add your business logic here
-        break;
-      }
-
-      case 'checkout.session.completed': {
-        // Handle completed checkout session
-        const session = event.data.object;
-        console.log('Checkout completed:', session.id);
-
-        // Verify and process the checkout session
-        // This ensures the subscription is created and linked properly
-        try {
-          await this.stripeService.verifyCheckoutSession(session.id);
-          // Add additional business logic here (e.g., send confirmation email, update user status)
-        } catch (error) {
-          console.error('Error processing checkout session:', error);
-          // Don't throw - webhook should return 200 even if processing fails
-          // You can implement retry logic or alerting here
-        }
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
-    }
-
-    return { received: true };
   }
 
   // Health check endpoint

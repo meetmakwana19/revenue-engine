@@ -689,7 +689,6 @@ export class StripeService implements OnModuleInit {
       const price = await this.stripe.prices.retrieve(priceId, {
         expand: ['product'],
       });
-      this.logger.log('Price retrieved', price);
 
       // Check if price is active
       if (!price.active) {

@@ -10,6 +10,7 @@ import {
   StripeCustomer,
   StripeCustomerSchema,
 } from './providers/stripe/schemas/stripe-customer.schema';
+import { Subscription, SubscriptionSchema } from './providers/stripe/schemas/subscription.schema';
 import { StripeService } from './providers/stripe/services/stripe.service';
 
 @Module({
@@ -17,6 +18,7 @@ import { StripeService } from './providers/stripe/services/stripe.service';
     MongooseModule.forFeature([
       { name: StripeCustomer.name, schema: StripeCustomerSchema },
       { name: CheckoutSession.name, schema: CheckoutSessionSchema },
+      { name: Subscription.name, schema: SubscriptionSchema },
     ]),
     SubscriptionPlansModule,
   ],

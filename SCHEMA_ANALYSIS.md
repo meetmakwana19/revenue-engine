@@ -8,7 +8,7 @@ This document provides a comprehensive analysis of the database schema decisions
 
 ## Current Database Collections
 
-### 1. **StripeCustomer** (`stripecustomers` collection)
+### 1. **StripeCustomer** (`stripe_customers` collection)
 **Purpose**: Maps organizations to Stripe customers
 
 ```typescript
@@ -32,7 +32,7 @@ This document provides a comprehensive analysis of the database schema decisions
 
 ---
 
-### 2. **CheckoutSession** (`checkoutsessions` collection)
+### 2. **CheckoutSession** (`checkout_sessions` collection)
 **Purpose**: Tracks Stripe checkout sessions
 
 ```typescript

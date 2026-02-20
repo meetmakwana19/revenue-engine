@@ -3,7 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type StripeCustomerDocument = HydratedDocument<StripeCustomer>;
 
-@Schema()
+@Schema({ collection: 'stripe_customers' })
 export class StripeCustomer {
   @Prop({ required: true, unique: true })
   organization_id: string;

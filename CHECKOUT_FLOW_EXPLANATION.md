@@ -98,7 +98,7 @@ The `GET /stripe/checkout/success` endpoint:
 
 ## Database Schema
 
-### StripeCustomer Collection
+### StripeCustomer Collection (`stripe_customers`)
 
 ```typescript
 {
@@ -111,7 +111,7 @@ The `GET /stripe/checkout/success` endpoint:
 }
 ```
 
-### CheckoutSession Collection
+### CheckoutSession Collection (`checkout_sessions`)
 
 ```typescript
 {
@@ -521,7 +521,7 @@ The `GET /stripe/checkout/success` endpoint:
 
 ## Database Schema
 
-### StripeCustomer Collection
+### StripeCustomer Collection (`stripe_customers`)
 
 ```typescript
 {
@@ -534,7 +534,7 @@ The `GET /stripe/checkout/success` endpoint:
 }
 ```
 
-### CheckoutSession Collection
+### CheckoutSession Collection (`checkout_sessions`)
 
 ```typescript
 {

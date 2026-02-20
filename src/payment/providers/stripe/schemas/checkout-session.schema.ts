@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type CheckoutSessionDocument = CheckoutSession & Document;
 
-@Schema()
+@Schema({ collection: 'checkout_sessions' })
 export class CheckoutSession {
   @Prop({ required: true })
   organization_id: string;

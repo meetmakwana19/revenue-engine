@@ -12,6 +12,10 @@ export class CheckoutHeadersDto {
   @IsNotEmpty({ message: 'X-Customer-Email header is required' })
   @IsEmail({}, { message: 'X-Customer-Email must be a valid email address' })
   'x-customer-email': string;
+
+  @IsNotEmpty({ message: 'X-Region header is required' })
+  @IsString({ message: 'X-Region must be a string' })
+  'x-region': string;
 }
 
 /**
@@ -20,6 +24,7 @@ export class CheckoutHeadersDto {
 export interface ICheckoutHeaders {
   organizationId: string;
   customerEmail: string;
+  region: string;
 }
 
 /**
@@ -30,4 +35,6 @@ export interface RawCheckoutHeaders {
   'X-Organization-Id'?: string;
   'x-customer-email'?: string;
   'X-Customer-Email'?: string;
+  'x-region'?: string;
+  'X-Region'?: string;
 }

@@ -233,7 +233,7 @@ export class PaymentController {
     @Body() createCheckoutDto: CreateCheckoutDto,
   ) {
     // Headers are automatically validated by @CheckoutHeaders() decorator
-    // organizationId and customerEmail are now extracted from headers
+    // organizationId, customerEmail, and region are now extracted from headers
     // subscription_plan_uid is in the request body
 
     // Query subscription plan to get priceId from prices array based on billing_interval
@@ -303,6 +303,7 @@ export class PaymentController {
       overagesEnabled: createCheckoutDto.overages_enabled,
       overageBandwidth: createCheckoutDto.overage_bandwidth,
       overageApi: createCheckoutDto.overage_api,
+      region: headers.region,
     });
 
     return {

@@ -231,6 +231,7 @@ export class StripeService implements OnModuleInit {
   // Create or retrieve Stripe customer for organization
   async getOrCreateCustomer(
     organizationId: string,
+    region: string,
     email?: string,
   ): Promise<StripeCustomerDocument> {
     // Check if customer already exists in MongoDB
@@ -269,6 +270,7 @@ export class StripeService implements OnModuleInit {
       email,
       metadata: {
         organization_id: organizationId,
+        region: region,
       },
     });
 
@@ -296,6 +298,7 @@ export class StripeService implements OnModuleInit {
     overagesEnabled?: boolean;
     overageBandwidth?: boolean;
     overageApi?: boolean;
+    region: string;
   }): Promise<{ checkout_url: string; session_id: string }> {
     // Validate customer email is provided
     if (!params.customerEmail || !params.customerEmail.trim()) {
@@ -303,7 +306,29 @@ export class StripeService implements OnModuleInit {
     }
 
     // Get or create customer
-    const customer = await this.getOrCreateCustomer(params.organizationId, params.customerEmail);
+    const customer = await this.getOrCreateCustomer(
+      params.organizationId,
+      params.region,
+      params.customerEmail,
+    );
+
+    // Update customer metadata with region (mandatory from headers)
+    // Retrieve current customer from Stripe to get existing metadata
+    const currentStripeCustomer = await this.stripe.customers.retrieve(customer.stripe_customer_id);
+    const existingMetadata =
+      (currentStripeCustomer as Stripe.Customer).metadata || ({} as Record<string, string>);
+
+    // Update customer metadata with region
+    await this.stripe.customers.update(customer.stripe_customer_id, {
+      metadata: {
+        ...existingMetadata,
+        region: params.region,
+      },
+    });
+    // Refresh customer data in MongoDB
+    const updatedStripeCustomer = await this.stripe.customers.retrieve(customer.stripe_customer_id);
+    customer.stripe_data = updatedStripeCustomer as unknown as Record<string, unknown>;
+    await customer.save();
 
     // Create checkout session in Stripe
     const session = await this.createCheckoutSession({

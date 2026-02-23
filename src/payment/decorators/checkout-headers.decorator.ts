@@ -31,11 +31,13 @@ export const CheckoutHeaders = createParamDecorator(
     // Extract headers (case-insensitive)
     const orgId = getHeaderValue('x-organization-id');
     const customerEmail = getHeaderValue('x-customer-email');
+    const region = getHeaderValue('x-region');
 
     // Create DTO instance for validation
     const dto = plainToInstance(CheckoutHeadersDto, {
       'x-organization-id': orgId,
       'x-customer-email': customerEmail,
+      'x-region': region,
     });
 
     // Validate
@@ -52,6 +54,7 @@ export const CheckoutHeaders = createParamDecorator(
     return {
       organizationId: (orgId || '').trim(),
       customerEmail: (customerEmail || '').trim(),
+      region: (region || '').trim(),
     };
   },
 );

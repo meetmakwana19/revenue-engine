@@ -1,0 +1,63 @@
+// Protocol Buffers (protobuf) definition file for Plan Service
+// This file defines the contract between gRPC client and server
+// Think of it as an API specification, but for gRPC instead of REST
+
+// Syntax version - proto3 is the current recommended version
+syntax = "proto3";
+
+// Package name - helps organize and namespace your services
+// This will be used in generated code
+// This same package name will be used in the client and server's main.ts file's connectMicroservice() method's `package` parameter to communicate with each other.
+package plan;
+
+// Service definition - similar to a class/interface in TypeScript
+// This defines what methods the PlanService exposes
+service PlanService {
+  // RPC method definition for updating a plan
+  // This mirrors the HTTP PUT /plans/:id endpoint
+  rpc updatePlan (UpdatePlanRequest) returns (UpdatePlanResponse);
+  
+  // You can add more methods here, for example:
+  // rpc getPlan (GetPlanRequest) returns (GetPlanResponse);
+  // rpc createPlan (CreatePlanRequest) returns (CreatePlanResponse);
+}
+
+// Feature data structure matching PlanDto's FeatureData
+message PlanFeature {
+  string uid = 1;                    // Feature UID (required)
+  string name = 2;                    // Feature name (required)
+  bool enabled = 3;                   // Whether feature is enabled (required)
+  int32 limit = 4;                    // Feature limit (optional)
+  int32 max_limit = 5;                 // Feature max limit (optional)
+  bool is_custom = 6;                 // Whether feature is custom (optional)
+  string group_key = 7;               // Feature group key (optional)
+  int32 key_order = 8;                // Feature order (optional)
+}
+
+// Plan data structure matching PlanDto's PlanData
+message PlanData {
+  string plan_id = 1;                 // Plan ID (required)
+  string name = 2;                     // Plan name (required)
+  repeated string blockedAssetTypes = 3; // Blocked asset types (optional)
+  repeated string tags = 4;            // Plan tags (optional)
+  string price = 5;                    // Plan price (optional, as string to match DTO)
+  string message = 6;                  // Plan message (optional)
+  repeated PlanFeature features = 7;    // Plan features (required)
+  string tier_uid = 8;                 // Tier UID (optional)
+  string tier_name = 9;                // Tier name (optional)
+}
+
+// Request message - what the client sends to the server
+message UpdatePlanRequest {
+  string plan_id = 1;                 // Plan ID from URL parameter (required)
+  PlanData plan = 2;                   // Plan data to update (required)
+  string authtoken = 3;                // Auth token for authorization (optional, can be in metadata)
+}
+
+// Response message - what the server sends back to the client
+message UpdatePlanResponse {
+  bool success = 1;                    // Whether the operation succeeded
+  string message = 2;                  // Human-readable message
+  PlanData plan = 3;                   // Updated plan data (if successful)
+  repeated string errors = 4;          // Error messages (if failed)
+}

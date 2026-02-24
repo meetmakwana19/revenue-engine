@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getMongooseConfig } from './config/mongoose.config';
+import { GrpcClientModule } from './grpc-client/grpc-client.module';
 import { PaymentModule } from './payment/payment.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 import { WebhookModule } from './webhook/webhook.module';
@@ -22,6 +23,7 @@ import { WebhookModule } from './webhook/webhook.module';
     PaymentModule,
     SubscriptionPlansModule,
     WebhookModule,
+    GrpcClientModule, // gRPC client module for learning
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,7 +9,8 @@ export class GrpcPlanController {
 
   @Post('update-plan')
   async updatePlan(@Body() request: UpdatePlanRequest) {
-    this.logger.log(`Received HTTP request to update plan via gRPC: ${request.plan_id}`);
+    const planId = request.plan?.plan_id || 'unknown';
+    this.logger.log(`Received HTTP request to update plan via gRPC: ${planId}`);
 
     try {
       // Call the gRPC client service which will make a gRPC call to the gRPC server

@@ -1,22 +1,42 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as microservices from '@nestjs/microservices';
-import { firstValueFrom, Observable } from 'rxjs';
+import { firstValueFrom, Observable, timeout, TimeoutError } from 'rxjs';
 
 // Interface matching the proto file definition
 // These must match exactly what's defined in plan.proto
-export interface UpdatePlanRequest {
-  plan_id: string;
-  name?: string;
-  price?: number;
+
+export interface PlanFeature {
+  uid: string;
+  name: string;
+  enabled: boolean;
+  limit?: number;
+  max_limit?: number;
+  is_custom?: boolean;
+  group_key?: string;
+  key_order?: number;
+}
+
+export interface PlanData {
+  plan_id: string; // Required - identifies which plan to update
+  name?: string; // All fields optional for PATCH-style updates except plan_id
+  blockedAssetTypes?: string[];
+  tags?: string[];
+  price?: string;
   message?: string;
-  is_active?: boolean;
+  features?: PlanFeature[]; // Optional - only update provided features
+  tier_uid?: string;
+  tier_name?: string;
+}
+
+export interface UpdatePlanRequest {
+  plan: PlanData; // Required - plan_id must be inside plan object
 }
 
 export interface UpdatePlanResponse {
   success: boolean;
   message: string;
-  plan_id: string;
-  updated_at: string;
+  plan?: PlanData; // Updated plan data (if successful)
+  errors?: string[]; // Error messages (if failed)
 }
 
 // Interface for the PlanService client
@@ -57,7 +77,21 @@ export class GrpcPlanClientService implements OnModuleInit {
   }
 
   async updatePlan(request: UpdatePlanRequest): Promise<UpdatePlanResponse> {
-    this.logger.log(`🟢 [gRPC CLIENT] Calling gRPC updatePlan for plan_id: ${request.plan_id}`);
+    // Validate request structure
+    if (!request || !request.plan) {
+      const error = new Error('Invalid request: plan object is required');
+      this.logger.error(`🟢 [gRPC CLIENT] ${error.message}`);
+      throw error;
+    }
+
+    if (!request.plan.plan_id) {
+      const error = new Error('Invalid request: plan.plan_id is required');
+      this.logger.error(`🟢 [gRPC CLIENT] ${error.message}`);
+      throw error;
+    }
+
+    const planId = request.plan.plan_id;
+    this.logger.log(`🟢 [gRPC CLIENT] Calling gRPC updatePlan for plan_id: ${planId}`);
     this.logger.log(`🟢 [gRPC CLIENT] Request payload: ${JSON.stringify(request)}`);
 
     if (!this.planService) {
@@ -71,14 +105,24 @@ export class GrpcPlanClientService implements OnModuleInit {
 
       // IMPORTANT: gRPC methods return Observables, not Promises
       // This wrapper converts Observable to Promise using firstValueFrom()
-      const response = await firstValueFrom(this.planService.updatePlan(request));
-
-      this.logger.log(
-        `🟢 [gRPC CLIENT] ✅ Received response from gRPC server: ${JSON.stringify(response)}`,
+      // Add timeout to prevent hanging (30 seconds)
+      const response = await firstValueFrom(
+        this.planService.updatePlan(request).pipe(
+          timeout(30000), // 30 second timeout
+        ),
       );
 
       return response;
     } catch (error) {
+      // Handle timeout specifically
+      if (error instanceof TimeoutError) {
+        const timeoutError = new Error(
+          'gRPC call timed out after 30 seconds. The server may not be responding or proto files may be mismatched. Please restart both services.',
+        );
+        this.logger.error(`🟢 [gRPC CLIENT] ❌ ${timeoutError.message}`);
+        throw timeoutError;
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(

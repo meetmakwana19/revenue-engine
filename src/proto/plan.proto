@@ -35,23 +35,24 @@ message PlanFeature {
 }
 
 // Plan data structure matching PlanDto's PlanData
+// All fields are optional for PATCH-style partial updates except plan_id
 message PlanData {
-  string plan_id = 1;                 // Plan ID (required)
-  string name = 2;                     // Plan name (required)
+  string plan_id = 1;                 // Plan ID (required - identifies which plan to update)
+  string name = 2;                     // Plan name (optional)
   repeated string blockedAssetTypes = 3; // Blocked asset types (optional)
   repeated string tags = 4;            // Plan tags (optional)
   string price = 5;                    // Plan price (optional, as string to match DTO)
   string message = 6;                  // Plan message (optional)
-  repeated PlanFeature features = 7;    // Plan features (required)
+  repeated PlanFeature features = 7;    // Plan features (optional - only provided features are updated/merged)
   string tier_uid = 8;                 // Tier UID (optional)
   string tier_name = 9;                // Tier name (optional)
 }
 
 // Request message - what the client sends to the server
+// PATCH-style: only provided fields are updated
+// For features: only provided features are updated/merged with existing ones
 message UpdatePlanRequest {
-  string plan_id = 1;                 // Plan ID from URL parameter (required)
-  PlanData plan = 2;                   // Plan data to update (required)
-  string authtoken = 3;                // Auth token for authorization (optional, can be in metadata)
+  PlanData plan = 1;                   // Plan data to update (required - plan_id must be inside plan object)
 }
 
 // Response message - what the server sends back to the client

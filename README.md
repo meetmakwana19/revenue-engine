@@ -1218,7 +1218,7 @@ stripe login
 #### Step 3: Forward Webhooks to Local Server
 
 ```bash
-stripe listen --forward-to localhost:3000/payments/webhook
+stripe listen --forward-to localhost:3000/webhooks/stripe
 ```
 
 **Output:**

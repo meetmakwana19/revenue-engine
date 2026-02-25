@@ -149,7 +149,8 @@ export class SubscriptionPlansController {
       if (
         !updateSubscriptionPlanDto.name &&
         !updateSubscriptionPlanDto.metadata &&
-        !updateSubscriptionPlanDto.prices
+        !updateSubscriptionPlanDto.prices &&
+        !updateSubscriptionPlanDto.org_plan_template_uid
       ) {
         throw new BadRequestException('At least one field must be provided for update');
       }

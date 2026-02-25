@@ -22,6 +22,10 @@ export class MetadataDto {
 
 export class UpdateSubscriptionPlanDto {
   @IsOptional()
+  @IsString({ message: 'Org plan template UID must be a string' })
+  org_plan_template_uid?: string;
+
+  @IsOptional()
   @IsString({ message: 'Name must be a string' })
   name?: string;
 

@@ -22,6 +22,9 @@ export class SubscriptionPlan {
   subscription_plan_uid: string;
 
   @Prop({ required: true })
+  org_plan_template_uid: string;
+
+  @Prop({ required: true })
   name: string;
 
   @Prop({

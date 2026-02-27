@@ -446,6 +446,25 @@ export class StripeService implements OnModuleInit {
         metadata: Record<string, string>;
       };
     } | null;
+    invoice?: {
+      id: string;
+      number: string | null;
+      amount_paid: number;
+      total: number;
+      subtotal: number;
+      currency: string;
+      status: string;
+      paid_at: string | null;
+      invoice_pdf: string | null;
+      hosted_invoice_url: string | null;
+      line_items?: Array<{
+        id: string;
+        description: string | null;
+        amount: number;
+        currency: string;
+        quantity: number;
+      }>;
+    };
     customer_id?: string | null;
     error?: string;
   }> {
@@ -508,7 +527,7 @@ export class StripeService implements OnModuleInit {
 
       // Retrieve subscription with expanded items (price and product)
       const subscription = await this.stripe.subscriptions.retrieve(subscriptionId, {
-        expand: ['items.data.price.product'],
+        expand: ['items.data.price.product', 'latest_invoice', 'latest_invoice.payment_intent'],
       });
 
       this.logger.log('Subscription retrieved', subscription);
@@ -637,6 +656,59 @@ export class StripeService implements OnModuleInit {
         }
       }
 
+      // Extract invoice details from latest_invoice
+      let invoiceDetails:
+        | {
+            id: string;
+            number: string | null;
+            amount_paid: number;
+            total: number;
+            subtotal: number;
+            currency: string;
+            status: string;
+            paid_at: string | null;
+            invoice_pdf: string | null;
+            hosted_invoice_url: string | null;
+            line_items?: Array<{
+              id: string;
+              description: string | null;
+              amount: number;
+              currency: string;
+              quantity: number;
+            }>;
+          }
+        | undefined;
+
+      if (subscription.latest_invoice) {
+        const invoice =
+          typeof subscription.latest_invoice === 'string' ? null : subscription.latest_invoice;
+
+        if (invoice) {
+          invoiceDetails = {
+            id: invoice.id,
+            number: invoice.number || null,
+            amount_paid: invoice.amount_paid,
+            total: invoice.total,
+            subtotal: invoice.subtotal,
+            currency: invoice.currency,
+            status: invoice.status || 'unknown',
+            paid_at: invoice.status_transitions?.paid_at
+              ? new Date(invoice.status_transitions.paid_at * 1000).toISOString()
+              : null,
+            invoice_pdf: invoice.invoice_pdf || null,
+            hosted_invoice_url: invoice.hosted_invoice_url || null,
+            line_items:
+              invoice.lines?.data?.map((line) => ({
+                id: line.id,
+                description: line.description || null,
+                amount: line.amount,
+                currency: line.currency,
+                quantity: line.quantity || 0,
+              })) || undefined,
+          };
+        }
+      }
+
       this.logger.log('Checkout session verified successfully', {
         sessionId,
         subscriptionId,
@@ -658,6 +730,7 @@ export class StripeService implements OnModuleInit {
           product: productDetails,
           price: priceDetails,
         },
+        invoice: invoiceDetails,
         customer_id: customerId,
       };
     } catch (error) {

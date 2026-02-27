@@ -804,6 +804,25 @@ export class StripeService implements OnModuleInit {
     return await this.stripe.subscriptions.cancel(subscriptionId);
   }
 
+  // Product Feature methods
+  async attachFeatureToProduct(productId: string, entitlementFeatureId: string) {
+    // Using type assertion as the Stripe SDK types may not include product features API yet
+    // The features API exists in Stripe but TypeScript types are not fully updated
+    type ProductsWithFeatures = Stripe.ProductsResource & {
+      features: {
+        create: (
+          productId: string,
+          params: { entitlement_feature: string },
+        ) => Promise<Stripe.ProductFeature>;
+      };
+    };
+    // @ts-expect-error - Stripe SDK types don't include products.features yet, but API exists
+    const productsResource: ProductsWithFeatures = this.stripe.products;
+    return await productsResource.createFeature(productId, {
+      entitlement_feature: entitlementFeatureId,
+    });
+  }
+
   // Webhook methods
   constructWebhookEvent(payload: string | Buffer, signature: string, secret: string): Stripe.Event {
     return this.stripe.webhooks.constructEvent(payload, signature, secret);

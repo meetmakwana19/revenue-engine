@@ -15,6 +15,7 @@ import type { SubscriptionPlan } from '../subscription-plans/schemas/subscriptio
 import { SubscriptionPlansService } from '../subscription-plans/subscription-plans.service';
 import { CheckoutHeaders } from './decorators/checkout-headers.decorator';
 import type { ICheckoutHeaders } from './dto/checkout-headers.dto';
+import { AttachFeatureToProductDto } from './providers/stripe/dto/attach-feature-to-product.dto';
 import { CreateCheckoutSessionDto } from './providers/stripe/dto/create-checkout-session.dto';
 import { CreateCheckoutDto } from './providers/stripe/dto/create-checkout.dto';
 import { CreateCustomerDto } from './providers/stripe/dto/create-customer.dto';
@@ -149,6 +150,19 @@ export class PaymentController {
   @HttpCode(HttpStatus.OK)
   async deleteProduct(@Param('id') id: string) {
     return await this.stripeService.deleteProduct(id);
+  }
+
+  // Product Feature endpoints
+  @Post('products/:id/features')
+  @HttpCode(HttpStatus.CREATED)
+  async attachFeatureToProduct(
+    @Param('id') productId: string,
+    @Body() attachFeatureDto: AttachFeatureToProductDto,
+  ) {
+    return await this.stripeService.attachFeatureToProduct(
+      productId,
+      attachFeatureDto.entitlement_feature,
+    );
   }
 
   // Price endpoints

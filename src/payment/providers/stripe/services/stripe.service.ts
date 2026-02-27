@@ -446,6 +446,7 @@ export class StripeService implements OnModuleInit {
         metadata: Record<string, string>;
       };
     } | null;
+    customer_id?: string | null;
     error?: string;
   }> {
     try {
@@ -456,6 +457,10 @@ export class StripeService implements OnModuleInit {
 
       this.logger.log('Session retrieved', { sessionId, status: session.status });
 
+      // Extract customer ID from session (can be string or Customer object)
+      const customerId =
+        typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
+
       if (session.status !== 'complete') {
         this.logger.warn(
           `Checkout session verification failed: Session status is '${session.status}', expected 'complete'`,
@@ -463,6 +468,7 @@ export class StripeService implements OnModuleInit {
         );
         return {
           subscription: null,
+          customer_id: customerId,
           error: `Session status is '${session.status}', expected 'complete'`,
         };
       }
@@ -479,6 +485,7 @@ export class StripeService implements OnModuleInit {
         );
         return {
           subscription: null,
+          customer_id: customerId,
           error: 'Checkout session not found in database',
         };
       }
@@ -494,6 +501,7 @@ export class StripeService implements OnModuleInit {
         );
         return {
           subscription: null,
+          customer_id: customerId,
           error: 'No subscription ID found in checkout session',
         };
       }
@@ -566,6 +574,7 @@ export class StripeService implements OnModuleInit {
         });
         return {
           subscription: null,
+          customer_id: customerId,
           error: `Invalid subscription properties: current_period_start=${typeof currentPeriodStart}, current_period_end=${typeof currentPeriodEnd}, created=${typeof created}`,
         };
       }
@@ -649,6 +658,7 @@ export class StripeService implements OnModuleInit {
           product: productDetails,
           price: priceDetails,
         },
+        customer_id: customerId,
       };
     } catch (error) {
       this.logger.error(`Checkout session verification failed: Unexpected error`, {
@@ -658,6 +668,7 @@ export class StripeService implements OnModuleInit {
       });
       return {
         subscription: null,
+        customer_id: null,
         error: `Unexpected error during verification: ${error instanceof Error ? error.message : String(error)}`,
       };
     }

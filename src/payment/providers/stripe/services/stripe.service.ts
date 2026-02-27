@@ -16,6 +16,9 @@ export class StripeService implements OnModuleInit {
   private stripe: Stripe;
   private readonly logger = new Logger(StripeService.name);
 
+  // Array of price IDs for optional items in checkout sessions (loaded from env variable)
+  private readonly optionalItemPriceIds: string[];
+
   constructor(
     @InjectModel(StripeCustomer.name)
     private stripeCustomerModel: Model<StripeCustomerDocument>,
@@ -31,6 +34,15 @@ export class StripeService implements OnModuleInit {
     this.stripe = new Stripe(secretKey, {
       typescript: true,
     });
+
+    // Parse optional item price IDs from environment variable (comma-separated)
+    const optionalItemsEnv = process.env.STRIPE_OPTIONAL_ITEM_PRICE_IDS;
+    this.optionalItemPriceIds = optionalItemsEnv
+      ? optionalItemsEnv
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0)
+      : [];
   }
 
   onModuleInit() {
@@ -229,6 +241,19 @@ export class StripeService implements OnModuleInit {
       ];
     } else {
       throw new Error('Either priceId, productId+amount, or amount must be provided');
+    }
+
+    // Add optional items with adjustable quantity
+    if (this.optionalItemPriceIds.length > 0) {
+      sessionParams.optional_items = this.optionalItemPriceIds.map((priceId) => ({
+        price: priceId,
+        quantity: 1,
+        adjustable_quantity: {
+          enabled: true,
+          minimum: 0,
+          maximum: 10,
+        },
+      }));
     }
 
     return await this.stripe.checkout.sessions.create(sessionParams);

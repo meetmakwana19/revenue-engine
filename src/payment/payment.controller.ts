@@ -304,6 +304,7 @@ export class PaymentController {
       overageBandwidth: createCheckoutDto.overage_bandwidth,
       overageApi: createCheckoutDto.overage_api,
       region: headers.region,
+      subscriptionPlanUid: createCheckoutDto.subscription_plan_uid, // Pass subscription_plan_uid to be added to subscription metadata
     });
 
     return {

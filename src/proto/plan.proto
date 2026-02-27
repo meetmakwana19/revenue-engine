@@ -17,6 +17,10 @@ service PlanService {
   // This mirrors the HTTP PUT /plans/:id endpoint
   rpc updatePlan (UpdatePlanRequest) returns (UpdatePlanResponse);
   
+  // RPC method for handling organization plan lifecycle from payment webhook
+  // Creates a new plan from template and default features, then updates organization
+  rpc handleOrganizationPlanLifecycle (HandleOrganizationPlanLifecycleRequest) returns (HandleOrganizationPlanLifecycleResponse);
+  
   // You can add more methods here, for example:
   // rpc getPlan (GetPlanRequest) returns (GetPlanResponse);
   // rpc createPlan (CreatePlanRequest) returns (CreatePlanResponse);
@@ -61,4 +65,19 @@ message UpdatePlanResponse {
   string message = 2;                  // Human-readable message
   PlanData plan = 3;                   // Updated plan data (if successful)
   repeated string errors = 4;          // Error messages (if failed)
+}
+
+// Request message for handling organization plan lifecycle
+message HandleOrganizationPlanLifecycleRequest {
+  string org_uid = 1;                  // Organization UID (required)
+  string org_plan_template_uid = 2;   // Template UID to fetch features from (required)
+}
+
+// Response message for handling organization plan lifecycle
+message HandleOrganizationPlanLifecycleResponse {
+  bool success = 1;                    // Whether the operation succeeded
+  string message = 2;                  // Human-readable message
+  string plan_id = 3;                  // Created/updated plan ID
+  string org_uid = 4;                  // Organization UID that was updated
+  repeated string errors = 5;          // Error messages (if failed)
 }

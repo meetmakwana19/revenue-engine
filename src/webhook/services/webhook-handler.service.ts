@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import Stripe from 'stripe';
+import { GrpcPlanClientService } from '../../grpc-client/grpc-plan-client.service';
 import {
   CheckoutSession,
   CheckoutSessionDocument,
@@ -15,6 +16,10 @@ import {
   SubscriptionDocument,
 } from '../../payment/providers/stripe/schemas/subscription.schema';
 import { StripeService } from '../../payment/providers/stripe/services/stripe.service';
+import {
+  SubscriptionPlan,
+  SubscriptionPlanDocument,
+} from '../../subscription-plans/schemas/subscription-plan.schema';
 import { WebhookEvent, WebhookEventDocument } from '../schemas/webhook-event.schema';
 
 export interface ProcessWebhookResult {
@@ -39,7 +44,10 @@ export class WebhookHandlerService {
     private checkoutSessionModel: Model<CheckoutSessionDocument>,
     @InjectModel(Subscription.name)
     private subscriptionModel: Model<SubscriptionDocument>,
+    @InjectModel(SubscriptionPlan.name)
+    private subscriptionPlanModel: Model<SubscriptionPlanDocument>,
     private readonly stripeService: StripeService,
+    private readonly grpcPlanClientService: GrpcPlanClientService,
   ) {}
 
   /**
@@ -307,6 +315,11 @@ export class WebhookHandlerService {
       subscription,
     });
 
+    await this.handleOrganizationPlanLifecycleFromSubscription(
+      customer.organization_id,
+      subscription,
+    );
+
     return {
       success: true,
       eventId: event.id,
@@ -371,6 +384,8 @@ export class WebhookHandlerService {
       }
     }
 
+    this.logger.log(`Subscription ID at handleInvoicePaymentSucceeded: ${subscriptionId}`);
+
     if (subscriptionId) {
       const subscription = await this.stripeService.getSubscription(subscriptionId);
       if (subscription) {
@@ -394,6 +409,8 @@ export class WebhookHandlerService {
           }
         }
       }
+    } else {
+      this.logger.warn(`Subscription ID not found for invoice ${invoice.id}`);
     }
 
     return {
@@ -603,5 +620,78 @@ export class WebhookHandlerService {
     });
 
     return subscriptionRecord;
+  }
+
+  /**
+   * Handle organization plan lifecycle from subscription
+   * This method is independent of subscription update logic and can be called
+   * from multiple webhook handlers (invoice.payment_succeeded, customer.subscription.created, etc.)
+   *
+   * @param orgUid - Organization UID
+   * @param subscription - Stripe subscription object
+   */
+  private async handleOrganizationPlanLifecycleFromSubscription(
+    orgUid: string,
+    subscription: Stripe.Subscription,
+  ): Promise<void> {
+    try {
+      // Get org_plan_template_uid from subscription_plans using subscription_plan_uid
+      // subscription_plan_uid and org_plan_template_uid have a one-to-one mapping
+      let org_plan_template_uid: string | undefined;
+
+      // Get subscription_plan_uid from subscription metadata
+      const subscriptionPlanUid = subscription.metadata?.subscription_plan_uid;
+
+      if (subscriptionPlanUid) {
+        // Look up subscription_plan by subscription_plan_uid to get org_plan_template_uid
+        const subscriptionPlan = await this.subscriptionPlanModel.findOne({
+          subscription_plan_uid: subscriptionPlanUid,
+        });
+
+        if (subscriptionPlan) {
+          org_plan_template_uid = subscriptionPlan.org_plan_template_uid;
+          this.logger.log(
+            `Found org_plan_template_uid: ${org_plan_template_uid} for subscription_plan_uid: ${subscriptionPlanUid}`,
+          );
+        } else {
+          this.logger.warn(
+            `Subscription plan not found for subscription_plan_uid: ${subscriptionPlanUid}`,
+          );
+          return; // Exit early if subscription plan not found
+        }
+      } else {
+        this.logger.warn('subscription_plan_uid not found in subscription metadata');
+        return; // Exit early if subscription_plan_uid not found
+      }
+
+      // Call gRPC method to handle organization plan lifecycle
+      if (org_plan_template_uid && orgUid) {
+        this.logger.log(
+          `Calling gRPC handleOrganizationPlanLifecycle for org_uid: ${orgUid}, template_uid: ${org_plan_template_uid}`,
+        );
+        const result = await this.grpcPlanClientService.handleOrganizationPlanLifecycle({
+          org_uid: orgUid,
+          org_plan_template_uid: org_plan_template_uid,
+        });
+
+        this.logger.log(
+          `Successfully handled organization plan lifecycle: ${JSON.stringify(result)}`,
+        );
+      } else {
+        this.logger.warn(
+          `Skipping gRPC call - missing org_plan_template_uid or org_uid. org_plan_template_uid: ${org_plan_template_uid}, org_uid: ${orgUid}`,
+        );
+      }
+    } catch (grpcError: unknown) {
+      // Log error but don't fail the webhook processing
+      // This method is called after subscription is already updated
+      const errorMessage = grpcError instanceof Error ? grpcError.message : String(grpcError);
+      const errorStack = grpcError instanceof Error ? grpcError.stack : undefined;
+      this.logger.error(
+        `Error calling gRPC handleOrganizationPlanLifecycle: ${errorMessage}`,
+        errorStack,
+      );
+      // Don't throw - allow webhook processing to continue
+    }
   }
 }

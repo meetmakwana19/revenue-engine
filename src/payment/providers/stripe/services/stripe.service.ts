@@ -170,6 +170,9 @@ export class StripeService implements OnModuleInit {
     cancelUrl: string;
     metadata?: Record<string, string>;
     mode?: 'payment' | 'subscription' | 'setup';
+    subscriptionData?: {
+      metadata?: Record<string, string>;
+    };
   }): Promise<Stripe.Checkout.Session> {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: params.mode || 'payment',
@@ -177,6 +180,13 @@ export class StripeService implements OnModuleInit {
       cancel_url: params.cancelUrl,
       metadata: params.metadata,
     };
+
+    // Add subscription_data if provided (for subscription mode)
+    if (params.subscriptionData && params.mode === 'subscription') {
+      sessionParams.subscription_data = {
+        metadata: params.subscriptionData.metadata,
+      };
+    }
 
     // Handle customer
     if (params.customerId) {
@@ -299,6 +309,7 @@ export class StripeService implements OnModuleInit {
     overageBandwidth?: boolean;
     overageApi?: boolean;
     region: string;
+    subscriptionPlanUid?: string; // subscription_plan_uid to be added to subscription metadata
   }): Promise<{ checkout_url: string; session_id: string }> {
     // Validate customer email is provided
     if (!params.customerEmail || !params.customerEmail.trim()) {
@@ -346,6 +357,13 @@ export class StripeService implements OnModuleInit {
         overage_api: String(params.overageApi || false),
       },
       mode: 'subscription', // Assuming subscription mode for plans
+      subscriptionData: {
+        metadata: {
+          // Add subscription_plan_uid to subscription metadata
+          // This will be copied to the subscription when Stripe creates it
+          ...(params.subscriptionPlanUid && { subscription_plan_uid: params.subscriptionPlanUid }),
+        },
+      },
     });
 
     // Save checkout session to MongoDB

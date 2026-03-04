@@ -33,7 +33,7 @@ export class PaymentController {
     private readonly subscriptionPlansService: SubscriptionPlansService,
   ) {}
 
-  // Customer endpoints
+  // Customer endpoints used for testing
   @Post('customers')
   @HttpCode(HttpStatus.CREATED)
   async createCustomer(@Body() createCustomerDto: CreateCustomerDto) {
@@ -66,7 +66,7 @@ export class PaymentController {
     return await this.stripeService.deleteCustomer(id);
   }
 
-  // Payment Intent endpoints
+  // Payment Intent endpoints are not consumed. No plan currently to use them.
   @Post('payment-intents')
   @HttpCode(HttpStatus.CREATED)
   async createPaymentIntent(@Body() createPaymentIntentDto: CreatePaymentIntentDto) {
@@ -115,7 +115,7 @@ export class PaymentController {
     return await this.stripeService.cancelPaymentIntent(id);
   }
 
-  // Product endpoints
+  // Product endpoints are used for testing.
   @Post('products')
   @HttpCode(HttpStatus.CREATED)
   async createProduct(@Body() createProductDto: CreateProductDto) {
@@ -152,7 +152,7 @@ export class PaymentController {
     return await this.stripeService.deleteProduct(id);
   }
 
-  // Product Feature endpoints
+  // Product Feature endpoint is used for attaching features to products as stripe UI doesn't support this.
   @Post('products/:id/features')
   @HttpCode(HttpStatus.CREATED)
   async attachFeatureToProduct(
@@ -165,7 +165,7 @@ export class PaymentController {
     );
   }
 
-  // Price endpoints
+  // Price endpoints not consumed. No plan currently to use them.
   @Post('prices')
   @HttpCode(HttpStatus.CREATED)
   async createPrice(@Body() createPriceDto: CreatePriceDto) {
@@ -188,7 +188,7 @@ export class PaymentController {
     return await this.stripeService.getPrice(id);
   }
 
-  // Subscription endpoints
+  // Subscription endpoints are not consumed. No plan currently to use them.
   @Post('subscriptions')
   @HttpCode(HttpStatus.CREATED)
   async createSubscription(@Body() createSubscriptionDto: CreateSubscriptionDto) {
@@ -216,7 +216,7 @@ export class PaymentController {
     return await this.stripeService.cancelSubscription(id);
   }
 
-  // Checkout Session endpoints (Recommended for custom payment flow)
+  // Checkout Session endpoints (Recommended for custom payment flow) not consumed. No plan currently to use them.
   @Post('checkout-sessions')
   @HttpCode(HttpStatus.CREATED)
   async createCheckoutSession(@Body() createCheckoutSessionDto: CreateCheckoutSessionDto) {
@@ -234,12 +234,13 @@ export class PaymentController {
     });
   }
 
+  // Not consumed. No plan currently to use them.
   @Get('checkout-sessions/:id')
   async getCheckoutSession(@Param('id') id: string) {
     return await this.stripeService.getCheckoutSession(id);
   }
 
-  // New checkout endpoint matching your API structure
+  // New checkout endpoint matching your API structure is used on product.
   @Post('checkout')
   @HttpCode(HttpStatus.OK)
   async createCheckout(
@@ -326,7 +327,7 @@ export class PaymentController {
     };
   }
 
-  // Success endpoint
+  // Success endpoint used on product.
   @Post('checkout/success')
   @HttpCode(HttpStatus.OK)
   async checkoutSuccess(@Body() verifyCheckoutSessionDto: VerifyCheckoutSessionDto) {

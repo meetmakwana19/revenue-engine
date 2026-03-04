@@ -1,0 +1,83 @@
+// Protocol Buffers (protobuf) definition file for Plan Service
+// This file defines the contract between gRPC client and server
+// Think of it as an API specification, but for gRPC instead of REST
+
+// Syntax version - proto3 is the current recommended version
+syntax = "proto3";
+
+// Package name - helps organize and namespace your services
+// This will be used in generated code
+// This same package name will be used in the client and server's main.ts file's connectMicroservice() method's `package` parameter to communicate with each other.
+package plan;
+
+// Service definition - similar to a class/interface in TypeScript
+// This defines what methods the PlanService exposes
+service PlanService {
+  // RPC method definition for updating a plan
+  // This mirrors the HTTP PUT /plans/:id endpoint
+  rpc updatePlan (UpdatePlanRequest) returns (UpdatePlanResponse);
+  
+  // RPC method for handling organization plan lifecycle from payment webhook
+  // Creates a new plan from template and default features, then updates organization
+  rpc handleOrganizationPlanLifecycle (HandleOrganizationPlanLifecycleRequest) returns (HandleOrganizationPlanLifecycleResponse);
+  
+  // You can add more methods here, for example:
+  // rpc getPlan (GetPlanRequest) returns (GetPlanResponse);
+  // rpc createPlan (CreatePlanRequest) returns (CreatePlanResponse);
+}
+
+// Feature data structure matching PlanDto's FeatureData
+message PlanFeature {
+  string uid = 1;                    // Feature UID (required)
+  string name = 2;                    // Feature name (required)
+  bool enabled = 3;                   // Whether feature is enabled (required)
+  int32 limit = 4;                    // Feature limit (optional)
+  int32 max_limit = 5;                 // Feature max limit (optional)
+  bool is_custom = 6;                 // Whether feature is custom (optional)
+  string group_key = 7;               // Feature group key (optional)
+  int32 key_order = 8;                // Feature order (optional)
+}
+
+// Plan data structure matching PlanDto's PlanData
+// All fields are optional for PATCH-style partial updates except plan_id
+message PlanData {
+  string plan_id = 1;                 // Plan ID (required - identifies which plan to update)
+  string name = 2;                     // Plan name (optional)
+  repeated string blockedAssetTypes = 3; // Blocked asset types (optional)
+  repeated string tags = 4;            // Plan tags (optional)
+  string price = 5;                    // Plan price (optional, as string to match DTO)
+  string message = 6;                  // Plan message (optional)
+  repeated PlanFeature features = 7;    // Plan features (optional - only provided features are updated/merged)
+  string tier_uid = 8;                 // Tier UID (optional)
+  string tier_name = 9;                // Tier name (optional)
+}
+
+// Request message - what the client sends to the server
+// PATCH-style: only provided fields are updated
+// For features: only provided features are updated/merged with existing ones
+message UpdatePlanRequest {
+  PlanData plan = 1;                   // Plan data to update (required - plan_id must be inside plan object)
+}
+
+// Response message - what the server sends back to the client
+message UpdatePlanResponse {
+  bool success = 1;                    // Whether the operation succeeded
+  string message = 2;                  // Human-readable message
+  PlanData plan = 3;                   // Updated plan data (if successful)
+  repeated string errors = 4;          // Error messages (if failed)
+}
+
+// Request message for handling organization plan lifecycle
+message HandleOrganizationPlanLifecycleRequest {
+  string org_uid = 1;                  // Organization UID (required)
+  string org_plan_template_uid = 2;   // Template UID to fetch features from (required)
+}
+
+// Response message for handling organization plan lifecycle
+message HandleOrganizationPlanLifecycleResponse {
+  bool success = 1;                    // Whether the operation succeeded
+  string message = 2;                  // Human-readable message
+  string plan_id = 3;                  // Created/updated plan ID
+  string org_uid = 4;                  // Organization UID that was updated
+  repeated string errors = 5;          // Error messages (if failed)
+}
